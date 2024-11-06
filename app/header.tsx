@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 const navigation = [
   {
     name: "Encode",
-    href: "/encode",
+    href: "/share",
   },
   {
     name: "Decode",
-    href: "/decode",
+    href: "/unseal",
   },
 
   {
