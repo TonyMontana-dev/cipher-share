@@ -22,6 +22,14 @@ const navigation = [
     href: "https://github.com/TonyMontana-dev/cipher-share",
     external: true,
   },
+  {
+    name: "Docs",
+    href: "/docs",
+  },
+  {
+    name: "Blog",
+    href: "/blog",
+  },
 ] satisfies { name: string; href: string; external?: boolean }[];
 
 export const Header: React.FC = () => {

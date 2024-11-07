@@ -28,7 +28,7 @@ export default function RootLayout({
           <div className="flex flex-col gap-1 px-6 py-12 mx-auto text-xs text-center text-zinc-700 max-w-7xl lg:px-8">
             <p>
               Built by{" "}
-              <Link href="https://twitter.com/chronark_" className="font-semibold duration-150 hover:text-zinc-200">
+              <Link href="https://twitter.com/DonMarceloArt" className="font-semibold duration-150 hover:text-zinc-200">
                 @chronark_
               </Link>
               and{" "}
@@ -40,7 +40,7 @@ export default function RootLayout({
               </Link>
             </p>
             <p>
-              EnvShare is deployed on{" "}
+              CipherShare is deployed on{" "}
               <Link target="_blank" href="https://vercel.com" className="underline duration-150 hover:text-zinc-200">
                 Vercel
               </Link>{" "}
