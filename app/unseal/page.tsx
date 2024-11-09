@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, Cog6ToothIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { Title } from "@components/title";
 import { decodeCompositeKey } from "pkg/encoding";
@@ -9,11 +9,12 @@ import { ErrorMessage } from "@components/error";
 
 export default function Unseal() {
   const [compositeKey, setCompositeKey] = useState<string>("");
+  const [text, setText] = useState<string | null>(null);
   const [fileData, setFileData] = useState<Blob | null>(null);
-  const [decryptedText, setDecryptedText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingReads, setRemainingReads] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -24,8 +25,8 @@ export default function Unseal() {
   const onSubmit = async () => {
     try {
       setError(null);
+      setText(null);
       setFileData(null);
-      setDecryptedText(null);
       setLoading(true);
 
       if (!compositeKey) {
@@ -38,10 +39,14 @@ export default function Unseal() {
         throw new Error(await res.text());
       }
 
-      const json = await res.json() as { iv: string; encrypted: string; remainingReads: number | null; };
+      const json = (await res.json()) as {
+        iv: string;
+        encrypted: string;
+        remainingReads: number | null;
+      };
       setRemainingReads(json.remainingReads);
 
-      // Decrypt using the correct algorithm and handle as binary data
+      // Perform decryption
       const decryptedArrayBuffer = await decrypt(
         Uint8Array.from(atob(json.encrypted), c => c.charCodeAt(0)), // Convert base64 to Uint8Array
         encryptionKey,
@@ -49,17 +54,14 @@ export default function Unseal() {
         version
       );
 
-      // Attempt to interpret as text, if possible
+      // Try to display as text; if it fails, provide as downloadable file
       try {
         const decodedText = new TextDecoder().decode(decryptedArrayBuffer);
-        setDecryptedText(decodedText); // Display as text if possible
-      } catch (e) {
-        console.warn("Decrypted data is not valid text, providing as file download only.");
+        setText(decodedText);
+      } catch {
+        const blob = new Blob([decryptedArrayBuffer], { type: "application/octet-stream" });
+        setFileData(blob);
       }
-
-      // Create a blob from the decrypted ArrayBuffer and set as fileData for download
-      const blob = new Blob([decryptedArrayBuffer], { type: "application/octet-stream" });
-      setFileData(blob);
     } catch (e) {
       console.error(e);
       setError((e as Error).message);
@@ -84,7 +86,7 @@ export default function Unseal() {
   return (
     <div className="container px-8 mx-auto mt-16 lg:mt-32">
       {error ? <ErrorMessage message={error} /> : null}
-      {fileData || decryptedText ? (
+      {text || fileData ? (
         <div className="max-w-4xl mx-auto">
           {remainingReads !== null ? (
             <div className="text-sm text-center text-zinc-600">
@@ -100,14 +102,26 @@ export default function Unseal() {
             </div>
           ) : null}
 
-          {/* Display decrypted text if available */}
-          {decryptedText && (
-            <div className="mt-4 p-4 bg-zinc-800 text-zinc-100 rounded border border-zinc-600">
-              <pre>{decryptedText}</pre>
-            </div>
-          )}
+          {text ? (
+            <pre className="px-4 py-3 mt-8 font-mono text-left bg-transparent border rounded border-zinc-600 focus:border-zinc-100/80 focus:ring-0 sm:text-sm text-zinc-100">
+              <div className="flex items-start px-1 text-sm">
+                <div aria-hidden="true" className="pr-4 font-mono border-r select-none border-zinc-300/5 text-zinc-700">
+                  {Array.from({ length: text.split("\n").length }).map((_, index) => (
+                    <Fragment key={index}>
+                      {(index + 1).toString().padStart(2, "0")}
+                      <br />
+                    </Fragment>
+                  ))}
+                </div>
+                <div>
+                  <pre className="flex overflow-x-auto">
+                    <code className="px-4 text-left">{text}</code>
+                  </pre>
+                </div>
+              </div>
+            </pre>
+          ) : null}
 
-          {/* Download button for the decrypted file */}
           <div className="flex items-center justify-end gap-4 mt-4">
             <Link
               href="/share"
@@ -116,14 +130,33 @@ export default function Unseal() {
             >
               Share another
             </Link>
-            <button
-              type="button"
-              className="relative inline-flex items-center px-4 py-2 -ml-px space-x-2 text-sm font-medium duration-150 border rounded text-zinc-700 border-zinc-300 bg-zinc-50 hover focus:border-zinc-500 focus:outline-none hover:text-zinc-50 hover:bg-zinc-900"
-              onClick={downloadFile}
-            >
-              <ArrowDownTrayIcon className="w-5 h-5" aria-hidden="true" />
-              <span>Download</span>
-            </button>
+            {fileData && (
+              <button
+                type="button"
+                className="relative inline-flex items-center px-4 py-2 -ml-px space-x-2 text-sm font-medium duration-150 border rounded text-zinc-700 border-zinc-300 bg-zinc-50 hover focus:border-zinc-500 focus:outline-none hover:text-zinc-50 hover:bg-zinc-900"
+                onClick={downloadFile}
+              >
+                <ArrowDownTrayIcon className="w-5 h-5" aria-hidden="true" />
+                <span>Download</span>
+              </button>
+            )}
+            {text && (
+              <button
+                type="button"
+                className="relative inline-flex items-center px-4 py-2 -ml-px space-x-2 text-sm font-medium duration-150 border rounded text-zinc-700 border-zinc-300 bg-zinc-50 hover focus:border-zinc-500 focus:outline-none hover:text-zinc-50 hover:bg-zinc-900"
+                onClick={() => {
+                  navigator.clipboard.writeText(text);
+                  setCopied(true);
+                }}
+              >
+                {copied ? (
+                  <ClipboardDocumentCheckIcon className="w-5 h-5" aria-hidden="true" />
+                ) : (
+                  <ClipboardDocumentIcon className="w-5 h-5" aria-hidden="true" />
+                )}
+                <span>{copied ? "Copied" : "Copy"}</span>
+              </button>
+            )}
           </div>
         </div>
       ) : (
