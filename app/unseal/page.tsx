@@ -1,6 +1,6 @@
 "use client";
 import React, { Fragment, useState, useEffect } from "react";
-import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, Cog6ToothIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { Title } from "@components/title";
 import { decodeCompositeKey } from "pkg/encoding";
 import { decrypt } from "pkg/encryption";
@@ -10,7 +10,6 @@ import { ErrorMessage } from "@components/error";
 export default function Unseal() {
   const [compositeKey, setCompositeKey] = useState<string>("");
   const [text, setText] = useState<string | null>(null);
-  const [fileData, setFileData] = useState<Blob | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingReads, setRemainingReads] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +25,6 @@ export default function Unseal() {
     try {
       setError(null);
       setText(null);
-      setFileData(null);
       setLoading(true);
 
       if (!compositeKey) {
@@ -54,13 +52,20 @@ export default function Unseal() {
         version
       );
 
-      // Try to display as text; if it fails, provide as downloadable file
+      // Try to display as text; if it fails, automatically download as file
       try {
         const decodedText = new TextDecoder().decode(decryptedArrayBuffer);
         setText(decodedText);
       } catch {
         const blob = new Blob([decryptedArrayBuffer], { type: "application/octet-stream" });
-        setFileData(blob);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "decrypted_file";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
     } catch (e) {
       console.error(e);
@@ -70,23 +75,10 @@ export default function Unseal() {
     }
   };
 
-  const downloadFile = () => {
-    if (fileData) {
-      const url = URL.createObjectURL(fileData);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "decrypted_file";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  };
-
   return (
     <div className="container px-8 mx-auto mt-16 lg:mt-32">
       {error ? <ErrorMessage message={error} /> : null}
-      {text || fileData ? (
+      {text ? (
         <div className="max-w-4xl mx-auto">
           {remainingReads !== null ? (
             <div className="text-sm text-center text-zinc-600">
@@ -102,25 +94,23 @@ export default function Unseal() {
             </div>
           ) : null}
 
-          {text ? (
-            <pre className="px-4 py-3 mt-8 font-mono text-left bg-transparent border rounded border-zinc-600 focus:border-zinc-100/80 focus:ring-0 sm:text-sm text-zinc-100">
-              <div className="flex items-start px-1 text-sm">
-                <div aria-hidden="true" className="pr-4 font-mono border-r select-none border-zinc-300/5 text-zinc-700">
-                  {Array.from({ length: text.split("\n").length }).map((_, index) => (
-                    <Fragment key={index}>
-                      {(index + 1).toString().padStart(2, "0")}
-                      <br />
-                    </Fragment>
-                  ))}
-                </div>
-                <div>
-                  <pre className="flex overflow-x-auto">
-                    <code className="px-4 text-left">{text}</code>
-                  </pre>
-                </div>
+          <pre className="px-4 py-3 mt-8 font-mono text-left bg-transparent border rounded border-zinc-600 focus:border-zinc-100/80 focus:ring-0 sm:text-sm text-zinc-100">
+            <div className="flex items-start px-1 text-sm">
+              <div aria-hidden="true" className="pr-4 font-mono border-r select-none border-zinc-300/5 text-zinc-700">
+                {Array.from({ length: text.split("\n").length }).map((_, index) => (
+                  <Fragment key={index}>
+                    {(index + 1).toString().padStart(2, "0")}
+                    <br />
+                  </Fragment>
+                ))}
               </div>
-            </pre>
-          ) : null}
+              <div>
+                <pre className="flex overflow-x-auto">
+                  <code className="px-4 text-left">{text}</code>
+                </pre>
+              </div>
+            </div>
+          </pre>
 
           <div className="flex items-center justify-end gap-4 mt-4">
             <Link
@@ -130,16 +120,6 @@ export default function Unseal() {
             >
               Share another
             </Link>
-            {fileData && (
-              <button
-                type="button"
-                className="relative inline-flex items-center px-4 py-2 -ml-px space-x-2 text-sm font-medium duration-150 border rounded text-zinc-700 border-zinc-300 bg-zinc-50 hover focus:border-zinc-500 focus:outline-none hover:text-zinc-50 hover:bg-zinc-900"
-                onClick={downloadFile}
-              >
-                <ArrowDownTrayIcon className="w-5 h-5" aria-hidden="true" />
-                <span>Download</span>
-              </button>
-            )}
             {text && (
               <button
                 type="button"
