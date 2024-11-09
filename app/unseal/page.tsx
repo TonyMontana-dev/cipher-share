@@ -1,9 +1,7 @@
 "use client";
 import React, { Fragment, useState, useEffect } from "react";
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, Cog6ToothIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-
 import { Title } from "@components/title";
-
 import { decodeCompositeKey } from "pkg/encoding";
 import { decrypt } from "pkg/encryption";
 import Link from "next/link";
@@ -11,6 +9,7 @@ import { ErrorMessage } from "@components/error";
 
 export default function Unseal() {
   const [compositeKey, setCompositeKey] = useState<string>("");
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCompositeKey(window.location.hash.replace(/^#/, ""));
@@ -21,7 +20,6 @@ export default function Unseal() {
   const [loading, setLoading] = useState(false);
   const [remainingReads, setRemainingReads] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const onSubmit = async () => {
     try {
@@ -38,16 +36,20 @@ export default function Unseal() {
       if (!res.ok) {
         throw new Error(await res.text());
       }
-      const json = (await res.json()) as {
-        iv: string;
-        encrypted: string;
-        remainingReads: number | null;
-      };
+
+      const json = await res.json() as { iv: string; encrypted: string; remainingReads: number | null; };
       setRemainingReads(json.remainingReads);
 
-      const decrypted = await decrypt(json.encrypted, encryptionKey, json.iv, version);
+      // Decrypt using the correct algorithm and handle as binary data
+      const decryptedArrayBuffer = await decrypt(
+        Uint8Array.from(atob(json.encrypted), c => c.charCodeAt(0)), // Convert base64 to Uint8Array
+        encryptionKey,
+        Uint8Array.from(atob(json.iv), c => c.charCodeAt(0)), // Convert iv from base64 to Uint8Array
+        version
+      );
 
-      const blob = new Blob([decrypted], { type: "application/octet-stream" });
+      // Create a blob from the decrypted ArrayBuffer and set as fileData
+      const blob = new Blob([decryptedArrayBuffer], { type: "application/octet-stream" });
       setFileData(blob);
     } catch (e) {
       console.error(e);
@@ -71,7 +73,7 @@ export default function Unseal() {
   };
 
   return (
-    <div className="container px-8 mx-auto mt-16 lg:mt-32 ">
+    <div className="container px-8 mx-auto mt-16 lg:mt-32">
       {error ? <ErrorMessage message={error} /> : null}
       {fileData ? (
         <div className="max-w-4xl mx-auto">
@@ -109,7 +111,7 @@ export default function Unseal() {
         </div>
       ) : (
         <form
-          className="max-w-3xl mx-auto "
+          className="max-w-3xl mx-auto"
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
@@ -117,7 +119,7 @@ export default function Unseal() {
         >
           <Title>Decrypt a document</Title>
 
-          <div className="px-3 py-2 mt-8 border rounded border-zinc-600 focus-within:border-zinc-100/80 focus-within:ring-0 ">
+          <div className="px-3 py-2 mt-8 border rounded border-zinc-600 focus-within:border-zinc-100/80 focus-within:ring-0">
             <label htmlFor="id" className="block text-xs font-medium text-zinc-100">
               ID
             </label>
@@ -134,9 +136,7 @@ export default function Unseal() {
           <button
             type="submit"
             disabled={loading}
-            className={`mt-8 w-full h-12 inline-flex justify-center items-center  transition-all  rounded px-4 py-1.5 md:py-2 text-base font-semibold leading-7 text-zinc-800   bg-zinc-200 ring-1  duration-150  hover:text-black hover:drop-shadow-cta   hover:bg-white ${
-              loading ? "animate-pulse" : ""
-            }`}
+            className={`mt-8 w-full h-12 inline-flex justify-center items-center transition-all rounded px-4 py-1.5 md:py-2 text-base font-semibold leading-7 text-zinc-800 bg-zinc-200 ring-1 duration-150 hover:text-black hover:drop-shadow-cta hover:bg-white ${loading ? "animate-pulse" : ""}`}
           >
             <span>{loading ? <Cog6ToothIcon className="w-5 h-5 animate-spin" /> : "Unseal"}</span>
           </button>
