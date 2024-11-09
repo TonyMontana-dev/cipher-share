@@ -119,6 +119,8 @@ export default function Home() {
           </pre>
 
           <div className="flex flex-col items-center justify-center w-full gap-4 mt-4 sm:flex-row">
+            
+                      {/**
             <div className="w-full sm:w-1/5">
               <label
                 className="flex items-center justify-center h-16 px-3 py-2 text-sm whitespace-no-wrap duration-150 border rounded hover:border-zinc-100/80 border-zinc-600 focus:border-zinc-100/80 focus:ring-0 text-zinc-100 hover:text-white hover:cursor-pointer "
@@ -143,6 +145,33 @@ export default function Home() {
                     setText(t);
                   };
                   reader.readAsText(file);
+                }}
+              />
+            </div> */}
+            <div className="w-full sm:w-1/5">
+              <label
+                className="flex items-center justify-center h-16 px-3 py-2 text-sm whitespace-no-wrap duration-150 border rounded hover:border-zinc-100/80 border-zinc-600 focus:border-zinc-100/80 focus:ring-0 text-zinc-100 hover:text-white hover:cursor-pointer "
+                htmlFor="file_input"
+              >
+                Upload a file
+              </label>
+              <input
+                className="hidden"
+                id="file_input"
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files![0];
+                  if (file.size > 1024 * 1024 * 10) { // 10MB limit
+                    setError("File size must be less than 10MB");
+                    return;
+                  }
+
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const t = e.target!.result as string;
+                    setText(t);
+                  };
+                  reader.readAsDataURL(file);
                 }}
               />
             </div>
