@@ -1,5 +1,5 @@
 "use client";
-import React, { Fragment, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, Cog6ToothIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { Title } from "@components/title";
 import { decodeCompositeKey } from "pkg/encoding";
@@ -9,22 +9,23 @@ import { ErrorMessage } from "@components/error";
 
 export default function Unseal() {
   const [compositeKey, setCompositeKey] = useState<string>("");
-  
+  const [fileData, setFileData] = useState<Blob | null>(null);
+  const [decryptedText, setDecryptedText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [remainingReads, setRemainingReads] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCompositeKey(window.location.hash.replace(/^#/, ""));
     }
   }, []);
 
-  const [fileData, setFileData] = useState<Blob | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [remainingReads, setRemainingReads] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   const onSubmit = async () => {
     try {
       setError(null);
       setFileData(null);
+      setDecryptedText(null);
       setLoading(true);
 
       if (!compositeKey) {
@@ -48,7 +49,15 @@ export default function Unseal() {
         version
       );
 
-      // Create a blob from the decrypted ArrayBuffer and set as fileData
+      // Attempt to interpret as text, if possible
+      try {
+        const decodedText = new TextDecoder().decode(decryptedArrayBuffer);
+        setDecryptedText(decodedText); // Display as text if possible
+      } catch (e) {
+        console.warn("Decrypted data is not valid text, providing as file download only.");
+      }
+
+      // Create a blob from the decrypted ArrayBuffer and set as fileData for download
       const blob = new Blob([decryptedArrayBuffer], { type: "application/octet-stream" });
       setFileData(blob);
     } catch (e) {
@@ -75,7 +84,7 @@ export default function Unseal() {
   return (
     <div className="container px-8 mx-auto mt-16 lg:mt-32">
       {error ? <ErrorMessage message={error} /> : null}
-      {fileData ? (
+      {fileData || decryptedText ? (
         <div className="max-w-4xl mx-auto">
           {remainingReads !== null ? (
             <div className="text-sm text-center text-zinc-600">
@@ -91,6 +100,14 @@ export default function Unseal() {
             </div>
           ) : null}
 
+          {/* Display decrypted text if available */}
+          {decryptedText && (
+            <div className="mt-4 p-4 bg-zinc-800 text-zinc-100 rounded border border-zinc-600">
+              <pre>{decryptedText}</pre>
+            </div>
+          )}
+
+          {/* Download button for the decrypted file */}
           <div className="flex items-center justify-end gap-4 mt-4">
             <Link
               href="/share"
