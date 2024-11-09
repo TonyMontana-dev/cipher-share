@@ -25,11 +25,11 @@ export default async function handler(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Missing `id` parameter" }, { status: 400 });
     }
 
-    const redisKey = ["envshare", id].join(":");
+    const redisKey = ["ciphershare", id].join(":");
 
     const [data, _] = await Promise.all([
       await redis.hgetall<{ secret: string; remainingReads: number | null }>(redisKey),
-      await redis.incr("envshare:metrics:reads"),
+      await redis.incr("ciphershare:metrics:reads"),
     ]);
 
     if (!data) {

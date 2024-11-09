@@ -14,7 +14,7 @@ export default async function handler(req: NextRequest) {
   const { encrypted, ttl, reads, iv } = (await req.json()) as Request;
 
   const id = generateId();
-  const key = ["envshare", id].join(":");
+  const key = ["ciphershare", id].join(":");
 
   const tx = redis.multi();
 
@@ -26,7 +26,7 @@ export default async function handler(req: NextRequest) {
   if (ttl) {
     tx.expire(key, ttl);
   }
-  tx.incr("envshare:metrics:writes");
+  tx.incr("ciphershare:metrics:writes");
 
   await tx.exec();
 
