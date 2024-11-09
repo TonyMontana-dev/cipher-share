@@ -123,6 +123,46 @@ export default function Home() {
             </div>
 
             {/* Additional input fields for READS and TTL remain the same */}
+            <div className="w-full h-16 px-3 py-2 duration-150 border rounded sm:w-2/5 hover:border-zinc-100/80 border-zinc-600 focus-within:border-zinc-100/80 focus-within:ring-0 ">
+              <label htmlFor="reads" className="block text-xs font-medium text-zinc-100">
+                READS
+              </label>
+              <input
+                type="number"
+                name="reads"
+                id="reads"
+                className="w-full p-0 text-base bg-transparent border-0 appearance-none text-zinc-100 placeholder-zinc-500 focus:ring-0 sm:text-sm"
+                value={reads}
+                onChange={(e) => setReads(e.target.valueAsNumber)}
+              />
+            </div>
+            <div className="relative w-full h-16 px-3 py-2 duration-150 border rounded sm:w-2/5 hover:border-zinc-100/80 border-zinc-600 focus-within:border-zinc-100/80 focus-within:ring-0 ">
+              <label htmlFor="reads" className="block text-xs font-medium text-zinc-100">
+                TTL
+              </label>
+              <input
+                type="number"
+                name="reads"
+                id="reads"
+                className="w-full p-0 text-base bg-transparent border-0 appearance-none text-zinc-100 placeholder-zinc-500 focus:ring-0 sm:text-sm"
+                value={ttl}
+                onChange={(e) => setTtl(e.target.valueAsNumber)}
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center">
+                <label htmlFor="ttlMultiplier" className="sr-only" />
+                <select
+                  id="ttlMultiplier"
+                  name="ttlMultiplier"
+                  className="h-full py-0 pl-2 bg-transparent border-0 border-transparent rounded pr-7 text-zinc-500 focus:ring-0 sm:text-sm"
+                  onChange={(e) => setTtlMultiplier(parseInt(e.target.value))}
+                  defaultValue={60 * 60 * 24}
+                >
+                  <option value={60}>{ttl === 1 ? "Minute" : "Minutes"}</option>
+                  <option value={60 * 60}>{ttl === 1 ? "Hour" : "Hours"}</option>
+                  <option value={60 * 60 * 24}>{ttl === 1 ? "Day" : "Days"}</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <button
